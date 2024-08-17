@@ -1,13 +1,19 @@
 import React from "react";
-import './App.css'
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import Header from "./components/Header";
+import Welcome from "./components/Welcome";
 import Chat from "./components/Chat";
 
-function App() {
+const App = () => {
   return (
-    <div className="flex justify-center items-center h-screen bg-gray-100">
-      <Chat />
-    </div>
+    <Router>
+      <Header />
+      <Routes>
+        <Route path="/" element={<Welcome />} />
+        <Route path="/chat" element={<Chat />} />
+      </Routes>
+    </Router>
   );
-}
+};
 
 export default App;
