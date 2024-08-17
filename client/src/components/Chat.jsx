@@ -35,7 +35,7 @@ const Chat = () => {
     return () => {
       socket.current.disconnect();
     };
-  }, [username]);
+  }, [username, backendUrl]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -53,7 +53,7 @@ const Chat = () => {
       setMessage("");
       setFile(null);
       socket.current.emit("stop typing");
-      inputRef.current.focus(); 
+      inputRef.current.focus();
     }
   };
 

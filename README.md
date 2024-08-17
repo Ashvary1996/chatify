@@ -94,3 +94,9 @@ cd chatify
 4. Start chatting and sharing files in real-time.
 
 **Note:** It may take a minute for the backend server to start. If you see "Backend server is not responding" or "Error connecting to backend server", wait a moment and refresh the page.
+
+
+## Live URLs
+
+- **Backend:** [https://chatify-ylb6.onrender.com](https://chatify-ylb6.onrender.com)
+- **Frontend:** [https://chatifybyashvary.netlify.app/](https://chatifybyashvary.netlify.app) 
