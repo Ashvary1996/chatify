@@ -1,15 +1,12 @@
 const mongoose = require("mongoose");
 
-const mongo_URI = "mongodb://localhost:27017/chatify";
-
-const connectToDb = () => {
-  mongoose
-    .connect(mongo_URI)
-    .then(() => {
-      console.log("Connected to Database Successfully");
-    })
-    .catch((err) => {
-      console.log(err);
-    });
+const connectToDb = async () => {
+  try {
+    await mongoose.connect(process.env.MONGO_URI);
+    console.log("MongoDB Connected!");
+  } catch (error) {
+    console.error("DB Connection Error:", error.message);
+    process.exit(1);
+  }
 };
 module.exports = connectToDb;
