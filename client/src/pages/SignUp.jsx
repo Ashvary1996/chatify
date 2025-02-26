@@ -1,23 +1,42 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 function SignUp() {
+  const navigate = useNavigate();
   const [userData, setUserData] = useState({
     name: "",
     email: "",
     password: "",
     phoneNumber: "",
   });
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submit Clicked", userData);
-    toast.success("SignUp succesfully ");
+    // console.log(" Clicked", userData);
+    try {
+      const response = await axios.post(
+        "http://localhost:8000/api/user/signup ",
+        userData
+      );
+      console.log(response);
+      if (response.data.success === true) {
+        toast.success(response.data.message);
+        setTimeout(() => {
+          navigate("/login");
+        }, 2000);
+      } else {
+        toast.warn(response.data.message);
+      }
+    } catch (error) {
+      console.log(console.log(error));
+      toast.error(`${error.message}: Try again later..`);
+    }
   };
   const handleChange = (e) => {
     const { name, value } = e.target;
     setUserData((pd) => ({ ...pd, [name]: value }));
-    console.log(name, value);
+    // console.log(name, value);
   };
   return (
     <div className="flex justify-center items-center min-h-screen bg-blue-200">

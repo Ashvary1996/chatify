@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 function LogIn() {
   const navigate = useNavigate();
@@ -12,12 +13,28 @@ function LogIn() {
 
   const [loginWith, setLoginWith] = useState("email");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Submit Clicked", userData);
-    toast.success("Log-In Successfully");
-    // redirect to home when user verify
-    navigate("/home");
+    // console.log("Submit Clicked", userData);
+    try {
+      axios.defaults.withCredentials = true;
+      const response = await axios.post(
+        "http://localhost:8000/api/user/login",
+        userData
+      );
+      // console.log("manualYresponse", response);
+      if (response.data.success === true) {
+        toast.success(response.data.message);
+        setTimeout(() => {
+          navigate("/home");
+        }, 2000);
+      }
+    } catch (error) {
+      console.log(console.log(error));
+      if (error.response.data.success === false) {
+        toast.warn(error.response.data.message);
+      } else toast.error(`${error.message}: Try again later..`);
+    }
   };
 
   const handleChange = (e) => {

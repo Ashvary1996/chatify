@@ -5,17 +5,20 @@ const jwt = require("jsonwebtoken");
 // //////////////
 const signUp = async (req, res) => {
   try {
-    const { firstName, lastName, email, phoneNumber, password } = req.body;
+    const { name, email, phoneNumber, password } = req.body;
     const existing_user = await User.findOne({ email });
     if (existing_user) {
-      return res.send("User Already Registerd with this email.");
+      return res.json({
+        success: false,
+        message: "User Already Registerd with this email.",
+        // existing_user
+      });
     }
     const salt = await bcrypt.genSalt(Number(process.env.SALT_ROUND));
     const hashedPassword = await bcrypt.hash(password, salt);
 
     const newUser = new User({
-      firstName,
-      lastName,
+      name,
       email,
       phoneNumber,
       password: hashedPassword,
@@ -23,11 +26,13 @@ const signUp = async (req, res) => {
 
     await newUser.save();
 
-    return res
-      .status(201)
-      .json({ message: "User registered successfully", user: newUser });
+    return res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      user: newUser,
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ success: false, message: error.message });
   }
 };
 const logIn = async (req, res) => {
@@ -45,12 +50,15 @@ const logIn = async (req, res) => {
     });
     if (!user) {
       return res.status(404).json({
+        success: false,
         message: "User does not exist with this email or phone number.",
       });
     }
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid credentials" });
     }
     //
 
@@ -66,12 +74,12 @@ const logIn = async (req, res) => {
     const cookieOptions = {
       expires: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // Expire in Two Days
       httpOnly: true,
-      // secure: true, // make it true if using HTTPS after deploy
+      secure: true, // make it true if using HTTPS after deploy
       sameSite: "None", // important for cross-site cookies
     };
 
     res.cookie("chatify_token", token, cookieOptions);
-    res.status(200).json({ status: true, message: "Login successful", token });
+    res.status(200).json({ success: true, message: "Login successful", token });
   } catch (error) {
     console.log(error);
     res.status(500).json({ error: error.message });
@@ -106,10 +114,10 @@ const me = async (req, res) => {
 
 const updateProfile = async (req, res) => {
   try {
-    const { firstName, lastName, profile_image } = req.body;
+    const { name, profile_image } = req.body;
     const user = await User.findByIdAndUpdate(
       req.user.id,
-      { firstName, lastName, profile_image },
+      { name, profile_image },
       { new: true }
     );
     res.status(200).json({ message: "Profile updated successfully", user });
@@ -158,5 +166,33 @@ const allUsers = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const getUserById = async (req, res) => {
+  try {
+    const { id } = req.body;   
+    if (!id) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
 
-module.exports = { signUp, logIn, me, updateProfile, searchUsers, allUsers };
+    const user = await User.findOne({ _id: id });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    res.status(200).json({ userName: user.name });
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+module.exports = {
+  signUp,
+  logIn,
+  me,
+  updateProfile,
+  searchUsers,
+  allUsers,
+  getUserById,
+};

@@ -3,12 +3,14 @@ const {
   sendFriendRequest,
   respondToFriendRequest,
   listFriends,
+  fetchFriendRequests,
 } = require("../controller/friendController");
 const authMiddleware = require("../middleware/authMiddleware");
 
 const route = express.Router();
 
-route.post("/request", authMiddleware, sendFriendRequest);
+route.post("/send_request", authMiddleware, sendFriendRequest);
+route.get("/fetch_requests", authMiddleware, fetchFriendRequests);
 route.put("/request/:id", authMiddleware, respondToFriendRequest);
 route.get("/list", authMiddleware, listFriends);
 

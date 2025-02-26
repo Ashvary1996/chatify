@@ -5,6 +5,8 @@ import MainChatScreen from "./components/MainChatScreen";
 function Home() {
   return (
     <div className="flex">
+      
+     
       <div className="w-1/4">
         <FriendAndSearch />
       </div>
