@@ -1,54 +1,76 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import FriendAndSearch from "./components/FriendAndSearch";
 import MainChatScreen from "./components/MainChatScreen";
 import axios from "axios";
+import io from "socket.io-client";
 
 function Home() {
+  const socket = io(process.env.REACT_APP_SERVER_HOST_URL);
+  axios.defaults.baseURL = process.env.REACT_APP_SERVER_HOST_URL;
+  axios.defaults.withCredentials = true;
+
   const [myFriends, setMyFriends] = useState([]);
   const [myFriendsDetails, setMyFriendsDetails] = useState([]);
   const [messages, setMessages] = useState([]);
   const [friend, setFriend] = useState("");
+  const [mydata, setmyData] = useState({});
 
-  console.log("selected_Friend:", friend);
+  // console.log("selected_Friend:", friend);
   // console.log("Friends:", myFriends);
   // console.log("Friend Details:", myFriendsDetails);
   // console.log("Messages:", messages);
+  // console.log("mydata :", mydata._id);
+  const getMyDetails = async () => {
+    const data = await axios.put("/api/user/me");
+    setmyData(data.data.user);
+    console.log("------", data.data.user._id);
 
-  const handleFriendSelect = (data) => {
-    setFriend(data);
-    console.log(data);
+    // Emit "user online" event to the server
+    socket.emit("user online", data.data.user._id);
+    // Set isOnline to true when the app loads or user logs in
+    await axios.put("/api/user/me", {
+      socketId: socket.id,
+    });
+    // console.log(data.data.user);
+  };
+
+  const setOfflineStatus = async () => {
+    try {
+      await axios.put("/api/user/me", {
+        isOnline: false,
+      });
+      console.log("User is now offline");
+    } catch (error) {
+      console.error("Error setting offline status:", error);
+    }
   };
 
   useEffect(() => {
-    fetchMyFriends();
+    getMyDetails();
+
+    return () => {
+      if (mydata._id) {
+        socket.emit("disconnect", mydata.id);
+      }
+    };
   }, []);
 
-  useEffect(() => {
-    if (myFriends.length > 0) {
-      fetchMessages();
-      fetchUserDetails();
-    }
-  }, [myFriends]);
-
-  // Fetch friend list
   const fetchMyFriends = async () => {
     try {
-      const { data } = await axios.get("http://localhost:8000/api/friend/list");
+      const { data } = await axios.get("/api/friend/list");
       setMyFriends(data);
     } catch (error) {
       console.log("Error fetching friends:", error);
     }
   };
 
-  // Fetch user details for friends
-  const fetchUserDetails = async () => {
+  const fetchUserDetails = useCallback(async () => {
     try {
       const usersData = await Promise.all(
         myFriends.map(async (friend) => {
-          const response = await axios.post(
-            "http://localhost:8000/api/user/get_user",
-            { id: friend._id }
-          );
+          const response = await axios.post("/api/user/get_user", {
+            id: friend._id,
+          });
           return { _id: friend._id, name: response.data.name };
         })
       );
@@ -57,22 +79,21 @@ function Home() {
     } catch (error) {
       console.log("Error fetching user details:", error);
     }
+  }, [myFriends]);
+  const handleFriendSelect = (data) => {
+    setFriend(data);
+    // console.log(data);
   };
 
-  // Fetch all messages
-  const fetchMessages = async () => {
+  const fetchMessages = useCallback(async () => {
     try {
-      const { data } = await axios.get(
-        "http://localhost:8000/api/chat/allmessages"
-      );
+      const { data } = await axios.get("/api/chat/allmessages");
 
-      // Create a lookup map for user IDs to names
       const userMap = myFriendsDetails.reduce((acc, user) => {
         acc[user._id] = user.name;
         return acc;
       }, {});
 
-      // Replace sender & receiver IDs with real names
       const formattedMessages = data.map((msg) => ({
         ...msg,
         senderName: userMap[msg.sender] || "Unknown",
@@ -83,7 +104,19 @@ function Home() {
     } catch (error) {
       console.log("Error fetching messages:", error);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchMyFriends();
+    getMyDetails();
+  }, []);
+
+  useEffect(() => {
+    if (myFriends.length > 0) {
+      fetchMessages();
+      fetchUserDetails();
+    }
+  }, [myFriends, fetchMessages, fetchUserDetails]);
 
   return (
     <div className="flex">
@@ -94,7 +127,7 @@ function Home() {
         />
       </div>
       <div className="w-3/4">
-        <MainChatScreen messages={messages} friend={friend} />
+        <MainChatScreen messages={messages} friend={friend} mydata={mydata} />
       </div>
     </div>
   );

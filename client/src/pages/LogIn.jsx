@@ -19,7 +19,7 @@ function LogIn() {
     try {
       axios.defaults.withCredentials = true;
       const response = await axios.post(
-        "http://localhost:8000/api/user/login",
+        "/api/user/login",
         userData
       );
       // console.log("manualYresponse", response);

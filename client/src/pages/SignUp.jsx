@@ -4,6 +4,8 @@ import { toast } from "react-toastify";
 import axios from "axios";
 
 function SignUp() {
+  axios.defaults.baseURL = process.env.REACT_APP_SERVER_HOST_URL
+  axios.defaults.withCredentials=true;
   const navigate = useNavigate();
   const [userData, setUserData] = useState({
     name: "",
@@ -16,7 +18,7 @@ function SignUp() {
     // console.log(" Clicked", userData);
     try {
       const response = await axios.post(
-        "http://localhost:8000/api/user/signup ",
+        "/api/user/signup ",
         userData
       );
       console.log(response);

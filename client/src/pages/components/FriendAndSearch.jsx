@@ -2,10 +2,10 @@ import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 axios.defaults.withCredentials = true;
 
-function FriendAndSearch({ myFriends,  onFriendSelect }) {
+function FriendAndSearch({ myFriends, onFriendSelect }) {
+  axios.defaults.baseURL = process.env.REACT_APP_SERVER_HOST_URL;
   axios.defaults.withCredentials = true;
 
-  
   const [input, setInput] = useState("");
   const [results, setResults] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
@@ -15,9 +15,7 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
 
   const fetchFriendRequests = useCallback(async () => {
     try {
-      const { data } = await axios.get(
-        "http://localhost:8000/api/friend/fetch_requests"
-      );
+      const { data } = await axios.get("/api/friend/fetch_requests");
 
       if (data.requestsList && data.requestsList.length > 0) {
         const updatedRequests = await Promise.all(
@@ -44,10 +42,7 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
     try {
       console.log("Fetching user with ID:", id);
 
-      const response = await axios.post(
-        "http://localhost:8000/api/user/get_user",
-        { id }
-      );
+      const response = await axios.post("/api/user/get_user", { id });
 
       return response.data.userName || "Unknown User"; // Ensure a fallback
     } catch (error) {
@@ -58,9 +53,9 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
 
   const respondToRequest = async (id, status) => {
     console.log(id, status);
-    console.log(`API URL: http://localhost:8000/api/friend/request/${id}`);
+    // console.log(`API URL: http://localhost:8000/api/friend/request/${id}`);
     try {
-      await axios.put(`http://localhost:8000/api/friend/request/${id}`, {
+      await axios.put(`/api/friend/request/${id}`, {
         status,
       });
 
@@ -75,12 +70,9 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
     if (!input.trim()) return;
 
     try {
-      const { data } = await axios.get(
-        "http://localhost:8000/api/user/search",
-        {
-          params: { query: input },
-        }
-      );
+      const { data } = await axios.get("/api/user/search", {
+        params: { query: input },
+      });
       setResults(data.length ? data : []);
     } catch (error) {
       console.error("Error fetching search results:", error);
@@ -92,7 +84,7 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
 
     setFriendRequests((prev) => [...prev, userId]);
     try {
-      axios.post("http://localhost:8000/api/friend/send_request", {
+      axios.post("/api/friend/send_request", {
         receiverId: userId,
       });
     } catch (error) {
@@ -218,9 +210,9 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
       <hr className="my-4" />
       {/* Friend List Item */}
 
-      {myFriends.map((elem, i) =>{
+      {myFriends.map((elem, i) => {
         // console.log(elem)
-       
+
         return (
           <div
             key={i}
@@ -232,9 +224,15 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
               <span className="text-xs absolute top-[-5px] right-[-5px]">
                 {elem.isOnline ? "🟢" : null}
               </span>
-              <span className="text-sm font-bold">JD</span>
+              <span className="text-sm font-bold">
+                {elem.name
+                  .split(" ")
+                  .map((word) => word[0])
+                  .join("")
+                  .toUpperCase() || "JD"}
+              </span>
             </div>
-  
+
             {/* Middle Div: Name and Message */}
             <div className="flex flex-col flex-1 mx-4">
               <h2 className="text-lg font-semibold text-left">{elem.name}</h2>
@@ -242,7 +240,7 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
                 Lorem ipsum dolor sit amet consectetur adipisicing elit...
               </p>
             </div>
-  
+
             {/* Right Div: Time and Notification */}
             <div className="text-right flex flex-col items-end">
               <span className="text-gray-500 text-sm block">8:30 PM</span>
@@ -251,10 +249,8 @@ function FriendAndSearch({ myFriends,  onFriendSelect }) {
               </span>
             </div>
           </div>
-        )
-      } 
-      
-      )}
+        );
+      })}
     </div>
   );
 }

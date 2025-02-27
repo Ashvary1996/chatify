@@ -88,7 +88,7 @@ const logIn = async (req, res) => {
 const me = async (req, res) => {
   try {
     const token = req.cookies.chatify_token;
-
+    const { isOnline } = req.body;
     if (!token) {
       return res
         .status(401)
@@ -102,8 +102,13 @@ const me = async (req, res) => {
       });
     }
     const user = await User.findOne({ email: decoded.email });
+    const updateUser = await User.findByIdAndUpdate(
+      user._id,
+      { isOnline: isOnline },
+      { new: true }
+    );
     res.status(200).json({
-      user: user,
+      user: updateUser,
       token: token,
     });
   } catch (error) {
@@ -168,7 +173,7 @@ const allUsers = async (req, res) => {
 };
 const getUserById = async (req, res) => {
   try {
-    const { id } = req.body;   
+    const { id } = req.body;
     if (!id) {
       return res.status(400).json({ error: "User ID is required" });
     }
@@ -185,7 +190,6 @@ const getUserById = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
-
 
 module.exports = {
   signUp,

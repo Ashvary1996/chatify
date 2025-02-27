@@ -1,44 +1,143 @@
 import axios from "axios";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { MdSend } from "react-icons/md";
-
-function MainChatScreen({ friend }) {
+import { io } from "socket.io-client";
+function MainChatScreen({ friend, mydata }) {
+  const [socket, setSocket] = useState(null);
   const [seeUserDetail, setSeeUserDetail] = useState(false);
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState("");
-  console.log("messsege screen: ", friend);
-
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  // console.log("messsege screen: ", friend);
+  // console.log(mydata._id, friend._id);
+  const messagesEndRef = useRef(null);
   const handleView = () => {
     console.log("clicked.");
     setSeeUserDetail((prev) => !prev);
   };
   useEffect(() => {
-    if (friend && friend._id) {
-      fetchMessages(friend._id);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
-  }, [friend]);
+  }, [messages]);
+  useEffect(() => {
+    if (!friend?._id) return;
+
+    fetchMessages(friend._id);
+
+    // socket.on("receiveMessage", (msg) => {
+    //   if (msg.sender === friend._id || msg.receiver === friend._id) {
+    //     setMessages((prev) => [...prev, msg]);
+    //   }
+    // });
+
+    // return () => {
+    //   socket.off("receiveMessage");
+    // };
+
+    // const handleReceiveMessage = (msg) => {
+    //   if (msg.sender === friend._id || msg.receiver === friend._id) {
+    //     setMessages((prev) => [...prev, msg]);
+    //   }
+    // };
+
+    // socket.on("receiveMessage", handleReceiveMessage);
+
+    // return () => {
+    //   socket.off("receiveMessage", handleReceiveMessage);
+  }, [friend?._id]);
+  useEffect(() => {
+    const newSocket = io(process.env.REACT_APP_SERVER_HOST_URL);
+    setSocket(newSocket);
+
+    // Cleanup on unmount
+    return () => {
+      newSocket.disconnect();
+    };
+  }, []);
+  useEffect(() => {
+    console.log("frndd", friend._id);
+
+    if (!socket || !friend?._id) return;
+
+    console.log("Listening for messages...");
+    socket.on("receiveMessage", (message) => {
+      console.log("Received message:", message);
+
+      if (message.sender === friend._id || message.receiver === friend._id) {
+        setMessages((prev) => [...prev, message]);
+      }
+    });
+
+    return () => {
+      socket.off("receiveMessage");
+    };
+  }, [socket, friend?._id]);
+
+  // const fetchMessages = async (friendId) => {
+  //   console.log("i render fetch messsge");
+
+  //   try {
+  //     const { data } = await axios.get(`/api/chat/messages/${friendId}`);
+  //     setMessages(data);
+  //   } catch (error) {
+  //     console.error("Error fetching messages:", error);
+  //   }
+  // };
+  // const sendMessage = async () => {
+  //   if (!newMessage.trim() || !friend) return;
+
+  //   const messageData = {
+  //     sender: "mydata.id",
+  //     receiver: friend._id,
+  //     content: newMessage,
+  //   };
+
+  //   socket.emit("sendMessage", messageData);
+  //   setMessages((prev) => [...prev, messageData]);
+  //   setNewMessage("");
+  //   console.log(messageData);
+
+  // };
 
   const fetchMessages = async (friendId) => {
+    setLoading(true);
+    setError(null);
+
     try {
-      const { data } = await axios.get(
-        `http://localhost:8000/api/chat/messages/${friendId}`
-      );
+      const { data } = await axios.get(`/api/chat/messages/${friendId}`);
       setMessages(data);
     } catch (error) {
       console.error("Error fetching messages:", error);
+      setError("Failed to load messages. Please try again.");
+    } finally {
+      setLoading(false);
     }
   };
-
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !friend) return;
+
+    const messageData = {
+      sender: mydata._id,
+      receiver: friend._id,
+      message: newMessage,
+    };
 
     try {
-      const { data } = await axios.post("http://localhost:8000/api/chat/send", {
-        receiverId: friend._id,
-        message: newMessage,
-      });
+      // const { data } = await axios.post("/api/chat/send", {
+      //   receiverId: friend._id,
+      //   message: newMessage,
+      // });
 
-      setMessages((prev) => [...prev, data]);
+      // setMessages((prev) => [...prev, data]);
+      // setNewMessage("");
+
+      socket.emit("sendMessage", messageData);
+      setMessages((prev) => [
+        ...prev,
+        { ...messageData, timeStamp: new Date() },
+      ]);
       setNewMessage("");
     } catch (error) {
       console.error("Error sending message:", error);
@@ -68,7 +167,6 @@ function MainChatScreen({ friend }) {
               </header>
 
               {/* Chat Messages Section */}
-              {/* Chat Messages Section */}
               <main className="flex flex-col  flex-1 overflow-y-auto mt-4 space-y-4 gap-2">
                 {messages.map((msg, index) => (
                   <div
@@ -85,6 +183,8 @@ function MainChatScreen({ friend }) {
                     </div>
                   </div>
                 ))}
+                <div ref={messagesEndRef} />{" "}
+                {/* Extra div to ensure scrolling */}
               </main>
 
               {/* Input Box Section for sending msg */}
