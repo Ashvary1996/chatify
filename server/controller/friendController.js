@@ -74,7 +74,7 @@ const listFriends = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).populate(
       "friends",
-      "firstName lastName email"
+      "name email isOnline profileImage phoneNumber"
     );
     res.status(200).json(user.friends);
   } catch (error) {

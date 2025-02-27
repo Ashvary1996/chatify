@@ -29,6 +29,19 @@ const getMessages = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+const myallMessages = async (req, res) => {
+  try {
+    const messages = await Message.find({
+      $or: [
+        { sender: req.user.id,  },
+        { receiver:  req.user.id,},
+      ],
+    }).sort({ timeStamp: 1 });
+    res.status(200).json(messages);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
 
 const markMessageAsRead = async (req, res) => {
   try {
@@ -42,4 +55,4 @@ const markMessageAsRead = async (req, res) => {
   }
 };
 
-module.exports = { sendMessage, getMessages, markMessageAsRead };
+module.exports = { sendMessage, getMessages, markMessageAsRead,myallMessages };

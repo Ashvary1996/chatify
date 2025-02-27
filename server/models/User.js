@@ -26,7 +26,11 @@ const UserSchema = new mongoose.Schema(
     },
     password: { type: String, required: [true, "Please Enter Your Password"] },
     isOnline: { type: Boolean, default: false },
-    profile_image: { type: String },
+    profileImage: {
+      type: String,
+      default:
+        "https://static-00.iconduck.com/assets.00/profile-default-icon-2048x2045-u3j7s5nj.png",
+    },
     friends: [
       {
         type: mongoose.Schema.Types.ObjectId,
